@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+    body,
+    .display-area {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .display-area {
+      width: 1300px;
+      height: 320px;
+      padding: 20px;
+    }
+    .divider {
+      width: 20px;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+    }
+    .divider.shown::before,
+    .divider.shown::after {
+      visibility: visible;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      display: inline-block;
+      visibility: hidden;
+      width: 15px;
+      height: 15px;
+      border-radius: 100%;
+      background: black;
+      margin: 20px 0;
+      box-shadow: 2px 2px 2px grey;
+    }
+    .flipper {
+      width: 150px;
+      height: 263px;
+      border: 1px solid white;
+      position: relative;
+      z-index: 1;
+      margin: 0 8px;
+      font-size: 0;
+      box-shadow: 2px 2px 2px grey;
+      border-radius: 15px;
+    }
+    .flipper-item {
+      width: 150px;
+      height: 130px;
+      position: absolute;
+      z-index: 1;
+      left: 0;
+      color: white;
+      font-size: 190px;
+      overflow: hidden;
+      background: black;
+      backface-visibility: hidden;
+      text-align: center;
+      border: 1px solid white;
+      perspective: 150px;
+    }
+    .flipper-item.current.top {
+      top: 0;
+      z-index: 3;
+      transform-origin: bottom;
+      border-bottom: 2px solid black;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+    .flipper-item.current.bottom {
+      top: 50%;
+      border-top: 2px solid black;
+      line-height: 0;
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
+    }
+    .flipper-item.next.top {
+      top: 0;
+      border-bottom: 2px solid black;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+    .flipper-item.next.bottom {
+      top: 50%;
+      z-index: 2;
+      line-height: 0;
+      transform-origin: top;
+      border-top: 2px solid black;
+      transform: rotateX(0.5turn);
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
+    }
+
+    /* 翻页动画 */
+    .flipper.flipping .current.top {
+      animation: currentTopFlipDown 0.6s ease-in-out;
+    }
+    .flipper.flipping .next.bottom {
+      animation: nextBottomFlipDown 0.6s ease-in-out;
+    }
+    @keyframes currentTopFlipDown {
+      to {
+        transform: rotateX(0.5turn);
+      }
+    }
+    @keyframes nextBottomFlipDown {
+      to {
+        transform: rotateX(0);
+      }
+    }
+  </style>
+  <body>
+    <div class="display-area">
+    </div>
+    <script>
+      // 得到当前时间，格式为['2', '3', '5', '9', '5', '9']
+      const getDateStrList = (date) => date.toTimeString().split(' ')[0].split('').filter(i => i != ':')
+      const timeList = getDateStrList(new Date())
+
+      // 创建现实时间的 dom 元素，并添加到 body 中
+      const createTimeDom = (list) => {
+        const dsiplayDom = document.querySelector('.display-area')
+        const fragment = document.createDocumentFragment()
+        list.forEach((newValue, index) => {
+          const flipperDom = document.createElement('div')
+          flipperDom.className = `flipper index-${index}`
+          for (let i = 0; i < 4; i++) {
+            flipperDom.innerHTML = `
+              <div class="flipper-item current top">${newValue}</div>
+              <div class="flipper-item current bottom">${newValue}</div>
+              <div class="flipper-item next top">${0}</div>
+              <div class="flipper-item next bottom">${0}</div>
+            `
+          }
+          fragment.appendChild(flipperDom)
+          if (index % 2 == 1 && index != list.length - 1) {
+            const div = document.createElement('div')
+            div.className = `divider`
+            fragment.appendChild(div)
+          }
+        })
+        dsiplayDom.appendChild(fragment)
+      }
+      createTimeDom(timeList)
+
+      let blinking = false
+      // 更新时间，并触发翻页动画
+      const animation = () => {
+        const newTimeList = getDateStrList(new Date())
+        newTimeList.forEach((newValue, index) => {
+          const flipperWrapper = document.querySelector(`.flipper.index-${index}`)
+          const currentValueDom = flipperWrapper.querySelector('.current')
+          const oldValue = currentValueDom.innerHTML
+
+          if (oldValue != newValue) {
+            flipperWrapper.querySelectorAll(`.flipper-item.next`)
+              .forEach((item) => {
+                item.innerHTML = newValue
+              })
+            flipperWrapper.classList.add('flipping')
+            setTimeout(() => {
+              flipperWrapper.classList.remove('flipping')
+              flipperWrapper.querySelectorAll(`.flipper-item.current`)
+                .forEach((item) => {
+                  item.innerHTML = newValue
+                })
+            }, 500)
+          }
+        })
+        blinking = !blinking
+        document.querySelectorAll('.divider')
+          .forEach((i) => {
+            i.classList[blinking ? 'add' : 'remove']('shown')
+          })
+      }
+
+      // 每秒更新时间
+      setInterval(() => {
+        animation()
+      }, 1000)
+    </script>
+  </body>
+</html>
